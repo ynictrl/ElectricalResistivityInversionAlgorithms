@@ -1,0 +1,1 @@
+Algoritimos de inversão de Dados de Eletrorresistividade: Abordagens Determinísticas, Estocásticas e com redes Neurais.
