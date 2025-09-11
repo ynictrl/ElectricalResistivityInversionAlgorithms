@@ -86,7 +86,7 @@ def add_gaussian_noise(data, mean=0, std_dev=0.30):
   Retorna:
   - np.array com ruído adicionado.
   """
-  noise = np.random.normal(mean, std_dev, size=data.shape)
+  noise = np.random.lognormal(mean, std_dev, size=data.shape)
   return data + noise
 
 
@@ -239,7 +239,6 @@ def annealing(params):
 
     Parâmetros:
     - params (dict): Dicionário com os seguintes campos:
-        - F: Função.
         - d_obs: Dado observado.
         - p_init: Parâmetros iniciais.
         - h: espessura(m) de cada camada (ultima é infinita).
@@ -249,6 +248,7 @@ def annealing(params):
         - i_max: Máximo de iterações.
         - tol_phi: Tolerância do erro.
         - range_ann: "Intervalo do passo anneling".
+        - F: Função.
 
     Retorna:
     - p_atual: parâmetros ajustados
@@ -263,10 +263,10 @@ def annealing(params):
     t = params.get('t', 5)
     r = params.get('r', 0.8)
     k = params.get('k', 5)
-    F = params.get('F', res_app)
     i_max = params.get('i_max', 1000)
     tol_phi = params.get('tol_phi', 1e-3)
     range_ann = params.get('range_ann', 1)
+    F = params.get('F', res_app)
 
     # Início da contagem de tempo
     tempo_inicial = time.time()
@@ -328,46 +328,4 @@ def annealing(params):
     return p_atual, i+1, ps, phis, delta_phis, tempo
 
 
-# TESTE
-
-
-p_true = np.array([450, 100, 400, 800])
-h = np.array([5, 7, 5, 10])
-
-d_obs = res_app(p_true, h)
-d_obs_n = add_gaussian_noise(d_obs)
-
-p_init = np.array([10, 10, 10, 10])
-# p_init = np.array([100, 100, 100, 100])
-
-
-# parametros_ann = {
-#     'd_obs': d_obs,
-#     'p_init': p_init,
-#     'h': h,
-# }
-
-# p_ann, j_ann, ps_ann, phis_ann, dphis_ann, t_ann = annealing(parametros_ann)
-
-# print("Resultado:")
-# print("p_ajusted =", p_ann)
-# print("Erro final =", phis_ann[-1])
-# print(f'Iterações: {j_ann}')
-# print("tempo_final", t_ann)
-
-# print("------------------------------------------")
-
-parametros_gn = {
-    'd_obs': d_obs,
-    'p_init': p_init,
-    'h': h,
-}
-
-p_gn, j_gn, p0s_gn, phis_gn, t_gn = gauss_newton(parametros_gn)
-
-print("Resultado:")
-print("p_ajusted =", p_gn)
-print("Erro final =", phis_gn[-1])
-print(f'Iterações: {j_gn}')
-print("tempo_final", t_gn)
 
