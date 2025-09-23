@@ -10,13 +10,40 @@ d_obs_n = nick.add_gaussian_noise(d_obs, 0, 0.5) # Dado observado com ruído
 
 # separar em grupos(agrupamento de dados) (crossplot)
 
-a = np.linspace(440, 460, 2)
-b = np.linspace(90, 110, 2)
-c = np.linspace(390, 410, 2)
-d = np.linspace(790, 810, 2)
+a = np.linspace(440, 460, 10)
+b = np.linspace(90, 110, 10)
+c = np.linspace(390, 410, 10)
+d = np.linspace(790, 810, 10)
 
-def dataGenerator():
-    ...
+def dataGaussNewtonGenerator():
+    # range de (90,800)
+    # [init, final, skip]
+
+    N = 4
+    M = len(a) * len(b) * len(c) * len(d)
+    matriz_p_gn = np.zeros((M,N))
+    i_matriz = 0
+        
+    for i in a:
+        for j in b:
+            for k in c:
+                for l in d:
+                    p_init_gen = np.array([i, j, k, l]) 
+                    parametros_gn_gen = {
+                        'd_obs': d_obs_n,
+                        'p_init': p_init_gen,
+                        'h': h
+                    }
+                    p_gn_gen = nick.gauss_newton(parametros_gn_gen)[0]
+
+                    # matriz_p_ann = np.append(matriz_p_ann, p_ann_gen)
+                    matriz_p_gn[i_matriz] = p_gn_gen
+
+                    i_matriz += 1
+                    
+    return matriz_p_gn
+
+def dataAnnealingGenerator():
     # range de (90,800)
     # [init, final, skip]
 
@@ -42,10 +69,7 @@ def dataGenerator():
 
                     i_matriz += 1
                     
-
-
-    
     return matriz_p_ann
 
-print(dataGenerator())
+print(dataGaussNewtonGenerator())
     
