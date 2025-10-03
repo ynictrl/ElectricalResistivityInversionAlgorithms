@@ -1,27 +1,21 @@
 import nick_inversion as nick
 import numpy as np
 
-p_init = np.array([100, 100, 100, 100]) # Valores das resistividades (dado inicial)
-p_true = np.array([450, 100, 400, 800]) # Valores das resistividades (dado verdadeiro)
-h = np.array([5, 7, 5, 10]) # Comprimento das camadas
+def ResAppGenerator():
+    # Gerador de vetores de resistividade aparente
 
-d_obs = nick.res_app(p_true, h) # Dado observado (resistividade aparente)
-d_obs_n = nick.add_gaussian_noise(d_obs, 0, 0.5) # Dado observado com ruído
+    # elementos do vetor de resistividade
+    a = np.random.uniform(50, 900, 2) 
+    b = np.random.uniform(50, 900, 2)
+    c = np.random.uniform(50, 900, 2)
+    d = np.random.uniform(50, 900, 2)
 
-# separar em grupos(agrupamento de dados) (crossplot)
+    # vetor de camadas
+    h = np.array([5, 7, 5, 10]) # Comprimento das camadas
 
-a = np.linspace(440, 460, 10)
-b = np.linspace(90, 110, 10)
-c = np.linspace(390, 410, 10)
-d = np.linspace(790, 810, 10)
-
-def dataGaussNewtonGenerator():
-    # range de (90,800)
-    # [init, final, skip]
-
-    N = 4
+    N = 19
     M = len(a) * len(b) * len(c) * len(d)
-    matriz_p_gn = np.zeros((M,N))
+    matriz_p = np.zeros((M,N))
     i_matriz = 0
         
     for i in a:
@@ -29,47 +23,15 @@ def dataGaussNewtonGenerator():
             for k in c:
                 for l in d:
                     p_init_gen = np.array([i, j, k, l]) 
-                    parametros_gn_gen = {
-                        'd_obs': d_obs_n,
-                        'p_init': p_init_gen,
-                        'h': h
-                    }
-                    p_gn_gen = nick.gauss_newton(parametros_gn_gen)[0]
+                    p_gen = nick.res_app(p_init_gen, h)
 
-                    # matriz_p_ann = np.append(matriz_p_ann, p_ann_gen)
-                    matriz_p_gn[i_matriz] = p_gn_gen
-
+                    matriz_p[i_matriz] = p_gen
                     i_matriz += 1
                     
-    return matriz_p_gn
+    return matriz_p
 
-def dataAnnealingGenerator():
-    # range de (90,800)
-    # [init, final, skip]
-
-    N = 4
-    M = len(a) * len(b) * len(c) * len(d)
-    matriz_p_ann = np.zeros((M,N))
-    i_matriz = 0
-        
-    for i in a:
-        for j in b:
-            for k in c:
-                for l in d:
-                    p_init_gen = np.array([i, j, k, l]) 
-                    parametros_ann_gen = {
-                        'd_obs': d_obs_n,
-                        'p_init': p_init_gen,
-                        'h': h
-                    }
-                    p_ann_gen = nick.annealing(parametros_ann_gen)[0]
-
-                    # matriz_p_ann = np.append(matriz_p_ann, p_ann_gen)
-                    matriz_p_ann[i_matriz] = p_ann_gen
-
-                    i_matriz += 1
-                    
-    return matriz_p_ann
-
-print(dataGaussNewtonGenerator())
+rag = ResAppGenerator()
+print(rag, len(rag))
+# print(a,b,c,d)
+# print(nick.res_app(np.array([a[0],b[0],c[0],d[0]]), h))
     
