@@ -1,37 +1,26 @@
 import nick_inversion as nick
 import numpy as np
 
-def ResAppGenerator():
+def ModelGenerator(min_p, max_p, N, qnt_p=4):
+    # Gerador de vetores de modelos
+
+    model_matriz = np.zeros((N, qnt_p))
+    for i in range(N):
+        model_matriz[i] = np.random.randint(min_p, max_p, qnt_p)
+
+    return model_matriz
+
+def ResAppGenerator(h, m_models):
     # Gerador de vetores de resistividade aparente
 
-    # elementos do vetor de resistividade
-    a = np.random.uniform(50, 900, 2) 
-    b = np.random.uniform(50, 900, 2)
-    c = np.random.uniform(50, 900, 2)
-    d = np.random.uniform(50, 900, 2)
+    N = np.shape(m_models)[0]
+    M = 19
+    data_matriz = np.zeros((N,M))
 
-    # vetor de camadas
-    h = np.array([5, 7, 5, 10]) # Comprimento das camadas
+    for i in range(N):
+        p_gen = nick.res_app(m_models[i], h)
 
-    N = 19
-    M = len(a) * len(b) * len(c) * len(d)
-    matriz_p = np.zeros((M,N))
-    i_matriz = 0
-        
-    for i in a:
-        for j in b:
-            for k in c:
-                for l in d:
-                    p_init_gen = np.array([i, j, k, l]) 
-                    p_gen = nick.res_app(p_init_gen, h)
+        data_matriz[i] = p_gen
 
-                    matriz_p[i_matriz] = p_gen
-                    i_matriz += 1
-                    
-    return matriz_p
-
-rag = ResAppGenerator()
-print(rag, len(rag))
-# print(a,b,c,d)
-# print(nick.res_app(np.array([a[0],b[0],c[0],d[0]]), h))
+    return data_matriz
     
