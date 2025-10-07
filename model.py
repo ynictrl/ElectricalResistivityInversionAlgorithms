@@ -40,7 +40,6 @@ ax1.step(p_true_ext, interfaces_ext, '--k', alpha = 0.75, label = "true")
 # ax1.fill_between(p_gn, interfaces)
 # ax1.fill_between(p_true, interfaces)
 
-
 ax1.set_xlabel('Resistivity (Ohm.m)', fontsize='x-large')
 ax1.set_ylabel('Depth (m)', fontsize='x-large')
 ax1.set_ylim((interfaces_ext[-1] + 1, z0))  # Invertido: maior profundidade embaixo
