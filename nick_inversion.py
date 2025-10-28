@@ -5,7 +5,7 @@ import time
 
 def Ln_u():
 
-  # variaveis iniciais
+  # initial variables
   x_step = np.log(10) / 3
   x0_main = -8.135341
   x0_inter = x0_main + 0.5 * x_step
@@ -17,18 +17,18 @@ def Ln_u():
 
   return lnU
 
-def res_app(p, h):
+def res_app(p, h, n_A):
 
   '''
-  Return:
-  Função que calcula a resistividade aparente
+  Function that calculates apparent resistivity.
 
   Input:
-  p = resistividade(ohm m) de cada camada | array(n)
-  h = espessura(m) de cada camada | array(n-1) | obs: ultima é infinita
+  - p = resistivity (ohm m) of each layer | array(n).
+  - h = thickness (m) of each layer | array(n-1) | note: the last layer is infinite.
+  - n_A = number of data points acquired.
 
   Output:
-  Resistidvidade aparente
+  Apparent resistivity.
   '''
 
   k = np.array([])
@@ -69,35 +69,39 @@ def res_app(p, h):
 
   # res
   res = np.array([]) #(m)
-  for i in range(19):
+  for i in range(n_A):
       res = np.append(res, _filter[0]*TABCD[i+18]+_filter[1]*TABCD[i+16]+_filter[2]*TABCD[i+14]+_filter[3]*TABCD[i+12]+_filter[4]*TABCD[i+10]+_filter[5]*TABCD[i+8]+_filter[6]*TABCD[i+6]+_filter[7]*TABCD[i+4]+_filter[8]*TABCD[i+2]+_filter[9]*TABCD[i])
 
   return res
 
 
-# adicionar ruido
 def add_gaussian_noise(data, mean=0, std_dev=0.30):
   """
-  Adiciona ruído gaussiano a um conjunto de dados.
-  Parâmetros:
-  - data: np.array, dados originais.
-  - mean: média do ruído (padrão: 0).
-  - std_dev: desvio padrão do ruído (padrão: 0.01).
-  Retorna:
-  - np.array com ruído adicionado.
+  Adds Gaussian noise to a dataset.
+
+  Input:
+  - data: np.array, original data.
+  - mean: mean of the noise (default: 0).
+  - std_dev: standard deviation of the noise (default: 0.01).
+
+  Output:
+  - np.array with noise added.
   """
   noise = np.random.lognormal(mean, std_dev, size=data.shape)
   return data + noise
 
 
-# Calculo da matriz Jacobiana / matriz sensibilidade
-def jacobiana(p, h, d_obs, v = 1e-3):
+def jacobiana(p, h, d_obs, n_A, v = 1e-3):
     """
-    Parâmetros:
-    - p: resistividade(ohm m) de cada camada | array(n)
-    - h: espessura(m) de cada camada | array(n-1) | obs: ultima é infinita
+    Calculation of the Jacobian matrix / sensitivity matrix.
+
+    Input:
+    - p: resistividade(ohm m) de cada camada | array(n).
+    - h: espessura(m) de cada camada | array(n-1) | obs: ultima é infinita.
     - d_obs: dado oservado.
-    Retorna:
+    - n_A: número de dados de pontos adquiridos.
+
+    Output:
     - matriz Jacobiana.
     """
     n_params = len(p)
@@ -115,18 +119,14 @@ def jacobiana(p, h, d_obs, v = 1e-3):
       delta = p[i] * v
       deltas.append(delta)
 
-      # duvida: quando o p_plus e p_minus muda a cada iteração. Reseta uma nova cópia ou as atualizações permanecem?
-      # exemplo: [100, 100, 100]: [101, 100, 100] -> [100, 101, 100] -> [100, 100, 101] ->
       p_plus = p.copy()
       p_minus = p.copy()
 
-      # p_plus[i] = p[i] + delta
-      # p_minus[i] = p[i] - delta
       p_plus[i] = p_plus[i] + delta
       p_minus[i] = p_minus[i] - delta
 
-      res_plus = res_app(p_plus, h)
-      res_minus = res_app(p_minus, h)
+      res_plus = res_app(p_plus, h, n_A)
+      res_minus = res_app(p_minus, h, n_A)
 
       p_plus_all.append(p_plus)
       p_minus_all.append(p_minus)
@@ -153,30 +153,33 @@ def error(observed_data, predicte_data):
 # def gauss_newton(p_init, _h, d_obs, max_iter, tol_delta=1e-3, tol_phi=1e-3):
 def gauss_newton(params):
     """
-    Ajustar parâmetros aplicando o método Gauss Newton.
+      Adjust parameters using the Gauss-Newton method.
 
-    Parâmetros:
-    - params (dict): Dicionário com os seguintes campos:
-        - p_init: hipóetses iniciais dos parâmetros | array.
-        - _h: espessura(m) de cada camada | array(n-1) | obs: ultima é infinita.
-        - d_obs: dados observados | array.
+      Input:
+      - params (dict): Dictionary with the following fields:
+        - p_init: Initial parameter assumptions | array.
+        - h: Thickness (m) of each layer | array(n-1) | obs: The last layer is infinite.
+        - d_obs: Observed data | array.
+        - n_A: Number of data points acquired.
 
-        - i: número de iterações.
-        - tol_delta: tolerância para norma da atualização do parâmetro.
-        - tol_phi: tolerância para variação da função objetivo (erro).
+        - max_iter: Number of iterations.
+        - tol_delta: Tolerance for the parameter update norm.
+        - tol_phi: Tolerance for the objective function variation (error).
 
-    Retorna:
-    - p_atual: parâmetros ajustados.
-    - i: número de iterações.
-    - ps: histórico dos parâmetros.
-    - phis: histórico dos valores da função objetivo | array.
+      Output:
+      - p_atual: Adjusted parameters.
+      - i: Number of iterations.
+      - ps: Parameter history.
+      - phis: Historical values ​​of the objective function | array.
     """
-    d_obs = params['d_obs']
     p_init = params['p_init']
     h = params['h']
+    d_obs = params['d_obs']
+    n_A = params['n_A']
+    
     max_iter = params.get('tol_phi', 100)
     # tol_delta = params.get('tol_delta', 1e-3)
-    tol_phi = params.get('tol_phi', 1e-3)
+    tol_phi = params.get('tol_phi', 1e-6)
 
     # Início da contagem de tempo
     tempo_inicial = time.time()
@@ -184,8 +187,7 @@ def gauss_newton(params):
     j = 0 # iterações
 
     p0 = p_init.copy()  # parametros antecessores
-    pred0 = res_app(p0, h)  # dado predito antecessor
-    r0 = d_obs - pred0  # resíduo antecessor
+    pred0 = res_app(p0, h, n_A)  # dado predito antecessor
     phi0 = (np.linalg.norm(d_obs - pred0))**2  # phi antecessor
 
     p0s = [p0]  # lista de parametros
@@ -194,8 +196,8 @@ def gauss_newton(params):
     for j in range(max_iter):
 
         # Definição da jacobiana e resíduos
-        G = jacobiana(p0, h, d_obs)[0]
-        r = d_obs - res_app(p0, h)
+        G = jacobiana(p0, h, d_obs, n_A)[0]
+        r = d_obs - res_app(p0, h, n_A)
 
         GTG = G.T @ G
         GTr = G.T @ r
@@ -206,7 +208,7 @@ def gauss_newton(params):
         p_atual = p0 + delta
 
         # Calcular dado predito
-        pred = res_app(p_atual, h)
+        pred = res_app(p_atual, h, n_A)
 
         # Função objetivo (norma² do resíduo)
         # TRANSFORMAR EM FUNÇÃO PHI E RES
@@ -220,14 +222,13 @@ def gauss_newton(params):
           print('Convergência por variação dos parâmetros')
           break
 
-        if max_iter > 0 and abs(phi - phis[-2]) < tol_phi:
+        if j > 0 and abs(phi - phis[-2]) < tol_phi:
           print("Convergência por estabilidade de Phi")
           break
 
         p0 = p_atual.copy()
         p0s.append(p0)
 
-    # duvida: a função retorna um ajuste da res. app. ou da res?
     tempo_final = time.time()
     tempo = tempo_final - tempo_inicial
     return p_atual, j, p0s, phis, tempo
@@ -235,38 +236,41 @@ def gauss_newton(params):
 
 def annealing(params):
     """
-    Ajustar parâmetros com o método Annealing.
+      Adjust parameters with the Annealing method.
 
-    Parâmetros:
-    - params (dict): Dicionário com os seguintes campos:
-        - d_obs: Dado observado.
-        - p_init: Parâmetros iniciais.
-        - h: espessura(m) de cada camada (ultima é infinita).
-        - t: "Temperatura inicial".
-        - r: "Fator de resfriamento".
-        - k: "Número de repetições por temperatura".
-        - i_max: Máximo de iterações.
-        - tol_phi: Tolerância do erro.
-        - range_ann: "Intervalo do passo anneling".
-        - F: Função.
+      Input:
+        - params (dict): Dictionary with the following fields:
+          - d_obs: Observed data.
+          - p_init: Initial parameters.
+          - h: Thickness (m) of each layer (the last one is infinite).
+          - n_A: Number of data points acquired.
 
-    Retorna:
-    - p_atual: parâmetros ajustados
-    - i+1: iterações
-    - ps: lista de paramêtros
-    - phis: lista de erro
-    - delta_phis: lista da variação do erro
+          - t: Initial temperature.
+          - r: Cooling factor.
+          - k: Number of repetitions per temperature.
+          - i_max: Maximum iterations.
+          - tol_phi: Error tolerance.
+          - range_ann: Anneling step interval.
+
+      Output:
+        - p_atual: Adjusted parameters.
+        - i+1: Iterations.
+        - ps: List of parameters.
+        - phis: List of error values.
+        - delta_phis: List of error variation values.
+        - tempo: runtime
     """
     d_obs = params['d_obs']
     p_init = params['p_init']
     h = params['h']
-    t = params.get('t', 5)
-    r = params.get('r', 0.8)
-    k = params.get('k', 5)
+    n_A = params['n_A']
+    t = params.get('t', 10)
+    r = params.get('r', 0.95)
+    k = params.get('k', 30)
     i_max = params.get('i_max', 1000)
     tol_phi = params.get('tol_phi', 1e-3)
     range_ann = params.get('range_ann', 1)
-    F = params.get('F', res_app)
+    # F = params.get('F', res_app)
 
     # Início da contagem de tempo
     tempo_inicial = time.time()
@@ -274,14 +278,14 @@ def annealing(params):
     # por clip do range
     n_params = len(p_init)
     p_atual = p_init.copy() #paramêtros
-    pred = F(p_init, h) #dado predito
+    pred = res_app(p_init, h, n_A) #dado predito
     phi_atual = error(d_obs, pred) #função objetivo ou erro
 
     ps = [p_atual] #lista de paramêtros
     phis = [phi_atual] #lista de erro
     delta_phis = [] #lista da variação do erro
 
-    num_solucoes = 10
+    # num_solucoes = 10
     p_novo = np.zeros(4)
 
     for i in range(i_max):
@@ -296,7 +300,7 @@ def annealing(params):
           # p_novo[1] = p_atual[1] + np.random.uniform(0, 1) # o range precisa ser um parametro do anneling
 
         #calculo do novo erro
-        pred_novo = F(p_novo, h)
+        pred_novo = res_app(p_novo, h, n_A)
         phi_novo = error(d_obs, pred_novo)
 
         delta_phi = phi_novo - phi_atual
